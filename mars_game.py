@@ -1,10 +1,10 @@
 import math
 import random
-import sys
 import pygame
+import sys
 
-screen_width = 800
-screen_height = 600
+screen_width = 1280
+screen_height = 720
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -16,8 +16,9 @@ class Player:
         self.x = x
         self.y = y
         self.radius = radius
-        self.movementspeed = 25.0    # pixels per second
+        self.movementspeed = 250.0    # pixels per second
         self.current_health = 100
+        self.damage = 20
         self.is_alive = True
 
     def main(self, screen):
@@ -36,7 +37,7 @@ class Player:
         if keypressed[pygame.K_d] or keypressed[pygame.K_RIGHT]:
             direction_x += 1
 
-        dist = math.sqrt(direction_x ** 2 + direction_y ** 2)
+        dist = math.hypot(direction_x, direction_y)
         if dist > 0:
             direction_x /= dist
             direction_y /= dist    
@@ -46,23 +47,20 @@ class Player:
         self.x = max(self.radius, min(screen_width - self.radius, self.x))
         self.y = max(self.radius, min(screen_height - self.radius, self.y))
 
-player= Player(400, 300, 20)
+player= Player(screen_width // 2, screen_height // 2, 20)
 
 def run_game():
     pygame.display.set_caption('Untitled_UAE_game')
-    running = True
-    dt = clock.tick(60) / 1000.0
-    #reset()
-    while running:
+    while True:
+        dt = clock.tick(60) / 1000.0
         screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                sys.exit()
         player.main(screen)
         player.movement(dt, pygame.key.get_pressed())
         pygame.display.flip()
-    pygame.quit()
-    sys.exit()
 
 
 if __name__ == '__main__':
