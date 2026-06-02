@@ -37,10 +37,11 @@ class Player:
         if keypressed[pygame.K_d] or keypressed[pygame.K_RIGHT]:
             direction_x += 1
 
-        dist = math.hypot(direction_x, direction_y)
-        if dist > 0:
-            direction_x /= dist
-            direction_y /= dist    
+        if direction_x != 0 or direction_y != 0:
+
+            direction_x /= 0.7071
+            direction_y /= 0.7071
+
             self.x += direction_x * self.movementspeed * dt
             self.y += direction_y * self.movementspeed * dt
 
