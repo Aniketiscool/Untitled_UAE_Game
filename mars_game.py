@@ -21,16 +21,13 @@ def run_game():
                 pygame.quit()
                 sys.exit()
 
-
-        #Activates the player methods        
-        player.draw(screen)
-        player.movement(dt, pygame.key.get_pressed())
-        player.state_machine(pygame.key.get_pressed())
+        update(dt)
 
 
         pygame.display.flip()
         print(player.x, player.y, player_state)
 
+#================================================CLASSES==================================================#
 
 class Player:
     def __init__(self, x, y, radius):
@@ -41,8 +38,8 @@ class Player:
         self.current_health = 100
         self.damage = 20
         self.is_alive = True
+        self.attack_cooldown = 0.5
            
-
     def draw(self, screen):
         pygame.draw.circle(screen, (126, 0, 126), (self.x, self.y), self.radius)
 
@@ -82,11 +79,19 @@ class Player:
             player_state = "moving_right"
         if not (keypressed[pygame.K_w] or keypressed[pygame.K_UP] or keypressed[pygame.K_s] or keypressed[pygame.K_DOWN] or keypressed[pygame.K_a] or keypressed[pygame.K_LEFT] or keypressed[pygame.K_d] or keypressed[pygame.K_RIGHT]):
             player_state = "idle"
+        if keypressed[pygame.K_SPACE] or keypressed[pygame.mouse.get_pressed()[0]]:
+            player_state = "shooting"
 
+#================================================METHODS==================================================#
+
+def update(dt):
+    #Activates the player methods        
+        player.draw(screen)
+        player.movement(dt, pygame.key.get_pressed())
+        player.state_machine(pygame.key.get_pressed())
 
 
 player= Player(screen_width // 2, 670, 20)
-
 
 
 if __name__ == '__main__':
