@@ -34,21 +34,28 @@ class Player:
         self.x = x
         self.y = y
         self.radius = radius
-        self.movementspeed = 250.0    # pixels per second
+        self.movementspeed = 300.0    # pixels per second
         self.current_health = 100
         self.damage = 20
         self.is_alive = True
         self.attack_cooldown = 0.5
            
+    #draws player: REPLACE WITH SPRITE LATER       
     def draw(self, screen):
         pygame.draw.circle(screen, (126, 0, 126), (self.x, self.y), self.radius)
 
+    
     def movement(self, dt, keypressed):
+        """handles all player movement, including diagonal movement and keeping the player within the screen
+
+        Args:
+            dt (int): time since last frame
+            keypressed (_type_): key that is currently being pressed
+        """
         X_direction_to_move = 0
         Y_direction_to_move = 0 
         if keypressed[pygame.K_w] or keypressed[pygame.K_UP]:
             Y_direction_to_move -= 1
-
         if keypressed[pygame.K_s] or keypressed[pygame.K_DOWN]:
             Y_direction_to_move += 1
         if keypressed[pygame.K_a] or keypressed[pygame.K_LEFT]:
@@ -56,18 +63,22 @@ class Player:
         if keypressed[pygame.K_d] or keypressed[pygame.K_RIGHT]:
             X_direction_to_move += 1
 
-        if X_direction_to_move != 0 or Y_direction_to_move != 0:
-
-            X_direction_to_move /= 0.7071
-            Y_direction_to_move /= 0.7071
-
+        #uses hypotenuse to stabilize diagonal movement
+        dist= math.hypot(X_direction_to_move, Y_direction_to_move)
+        if dist != 0:
             self.x += X_direction_to_move * self.movementspeed * dt
             self.y += Y_direction_to_move * self.movementspeed * dt
 
+        #stops player form leaving the screen
         self.x = max(self.radius, min(screen_width - self.radius, self.x))
         self.y = max(self.radius, min(screen_height - self.radius, self.y))
 
     def state_machine(self,keypressed):
+        """manages player state based on actions for sprites
+
+        Args:
+            keypressed : key that is currently being pressed
+        """
         global player_state
         if keypressed[pygame.K_w] or keypressed[pygame.K_UP]:
             player_state = "moving_up"
@@ -81,6 +92,28 @@ class Player:
             player_state = "idle"
         if keypressed[pygame.K_SPACE] or keypressed[pygame.mouse.get_pressed()[0]]:
             player_state = "shooting"
+
+class Bullet:
+    def __init__(self, x, y, direction):
+        self.x = x
+        self.y = y
+        self.direction = direction
+        self.speed = 500.0  # pixels per second
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #================================================METHODS==================================================#
 
