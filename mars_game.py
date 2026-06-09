@@ -25,7 +25,7 @@ def run_game():
     pygame.display.set_caption('Untitled_UAE_game')
     while True:
         dt = clock.tick(60) / 1000.0
-        screen.fill((222, 77, 48))
+        screen.fill(pygame.Color("#D8AD64"))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -47,12 +47,10 @@ class Player:
         self.radius = radius
         self.movementspeed = 300.0    # pixels per second
         self.current_health = 100
-        self.bullet_damage = 20
-        self.sword_damage = 40
 
-        self.is_alive = True
+        self.is_alive= True
         self.attack_cooldown = 0.0
-        self.weapon = "gun"        
+        self.weapon = "gun"
         self.weapon_swap_cooldown = 0.0       
            
     #draws player    
@@ -111,13 +109,14 @@ class Player:
 class Bullet:
     speed = 550.0
 
-    def __init__(self, x, y, vx, vy, radius=8, color=(255, 220, 0)):
+    def __init__(self, x, y, vx, vy, radius=8, color=(255, 220, 0), damage=20):
         self.x = x
         self.y = y
         self.velocity_x = vx
         self.velocity_y = vy
         self.radius = radius
         self.color = color
+        self.damage = damage
 
     def update(self, dt):
         self.x += self.velocity_x * dt
@@ -128,32 +127,40 @@ class Bullet:
         pygame.draw.rect(screen, self.color, rect)
 
 class Sword:
-    duration = 0.2
-    range_distance = 60
-    width = 40
-    height = 40
+    remaining_hitbox_duration = 0.25
+    range_distance = 90
+    arc_angle = math.pi / 2
+    segments = 10
 
     def __init__(self, x, y, dx, dy):
-        self.x = x
-        self.y = y
-        self.remaining_time = self.duration
+        self.origin_x = x
+        self.origin_y = y
         dist = math.hypot(dx, dy)
         if dist > 0:
             dx /= dist
             dy /= dist
-        self.x += dx * self.range_distance
-        self.y += dy * self.range_distance
-        self.color = (255, 255, 0)
+            self.angle = math.atan2(dy, dx)
+        else:
+            self.angle = 0.0
+        self.damage = 40
+        self.color = (255, 220, 0)
 
     def update(self, dt):
-        self.remaining_time -= dt
+        self.remaining_hitbox_time -= dt
 
     def draw(self, screen):
-        rect = pygame.Rect(int(self.x) - self.width // 2, int(self.y) - self.height // 2, self.width, self.height)
-        pygame.draw.rect(screen, self.color, rect)
+        points = [(int(self.origin_x), int(self.origin_y))]
+        half_angle = self.arc_angle / 2
+        for i in range(self.segments + 1):
+            step = -half_angle + (self.arc_angle * i / self.segments)
+            angle = self.angle + step
+            px = self.origin_x + math.cos(angle) * self.range_distance
+            py = self.origin_y + math.sin(angle) * self.range_distance
+            points.append((int(px), int(py)))
+        pygame.draw.polygon(screen, self.color, points)
 
-    def is_alive(self):
-        return self.remaining_time > 0
+    def is_active(self):
+        return self.remaining_hitbox_time > 0
 
 def fire_bullet():
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -164,7 +171,7 @@ def fire_bullet():
         return
     vx = dx / dist * Bullet.speed
     vy = dy / dist * Bullet.speed
-    bullets.append(Bullet(player.x, player.y, vx, vy, radius=8, color=(255,220,0)))
+    bullets.append(Bullet(player.x, player.y, vx, vy, radius=8, color=(255,220,242)))
 
 def swing_sword():
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -204,9 +211,9 @@ def update(dt):
         sword.update(dt)
         sword.draw(screen)
 
-    sword_swings[:] = [sword for sword in sword_swings if sword.is_alive()]
+    sword_swings[:] = [sword for sword in sword_swings if sword.is_active()]
 
-    weapon_text = font.render(f"Weapon: {player.weapon}", True, (255, 255, 255))
+    weapon_text = font.render(f"Weapon: {player.weapon}", True, (255, 220, 0))
     screen.blit(weapon_text, (10, 10))
     player.draw(screen)
 
