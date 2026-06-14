@@ -6,7 +6,7 @@ import sys
 pygame.init()
 
 font = pygame.font.SysFont(None, 24)
-title_font = pygame.font.SysFont(None, 64)
+title_font = pygame.font.SysFont(None, 167)
 ui_font = pygame.font.SysFont(None, 28)
 small_font = pygame.font.SysFont(None, 20)
 
@@ -64,14 +64,14 @@ class Player:
 
         self.is_alive= True
         self.attack_cooldown = 0.0
-        self.weapon = "gun"
+        self.weapon = "sword"
         self.weapon_swap_cooldown = 0.0
         self.sword_cooldown = 0.35
         self.damage_multiplier = 1.0
         self.bloodthirst_timer = 0.0
         self.bloodthirst_active = False
         self.bloodthirst_uses = 0
-        self.invincible_timer = 0.0
+        self.Iframe_timer = 0.0
         self.ability_slots = ["Bloodthirst", "", ""]
            
     #draws player    
@@ -121,22 +121,22 @@ class Player:
         if keypressed[pygame.K_SPACE] or pygame.mouse.get_pressed()[0]:
             player_state = "attacking"
         if keypressed[pygame.K_g] and self.weapon_swap_cooldown <= 0.0:
-            self.weapon = "sword" if self.weapon == "gun" else "gun"
+            if self.weapon == "sword":
+                self.weapon = "gun"
+            else:
+                self.weapon = "sword"
             self.weapon_swap_cooldown = 0.67
-
-    def shoot(self):
-        pass
 
 class Bullet:
     speed = 550.0
 
-    def __init__(self, x, y, vx, vy, radius=8, color=(255, 220, 0)):
+    def __init__(self, x, y, vx, vy,):
         self.x = x
         self.y = y
         self.velocity_x = vx
         self.velocity_y = vy
-        self.radius = radius
-        self.color = color
+        self.radius = 8
+        self.color = (255, 220, 0)
         self.damage = 20
 
     def update(self, dt):
@@ -231,7 +231,7 @@ class Enemy:
             self.color = (140, 20, 20)
             self.attack_damage = 20
             self.attack_delay = 1.2
-            self.label = "T"
+            self.label = "Tank"
             self.boulder_cooldown = 0.0
             self.boulder_preparing = False
             self.boulder_prep_timer = 0.0
@@ -243,7 +243,7 @@ class Enemy:
             self.color = (255, 130, 0)
             self.attack_damage = 8
             self.attack_delay = 0.7
-            self.label = "R"
+            self.label = "Runner"
             self.boulder_cooldown = 0.0
             self.boulder_preparing = False
             self.boulder_prep_timer = 0.0
@@ -255,7 +255,7 @@ class Enemy:
             self.color = (200, 30, 30)
             self.attack_damage = 10
             self.attack_delay = 1.0
-            self.label = "N"
+            self.label = "Normal"
             self.boulder_cooldown = 0.0
             self.boulder_preparing = False
             self.boulder_prep_timer = 0.0
@@ -284,27 +284,26 @@ class Enemy:
             self.x += dx / dist * self.speed * dt
             self.y += dy / dist * self.speed * dt
 
-        # keep enemies from overlapping too much
-        for other in enemies:
-            if other is self:
+        for enemy in enemies:
+            if enemy is self:
                 continue
-            dx2 = self.x - other.x
-            dy2 = self.y - other.y
+            dx2 = self.x - enemy.x
+            dy2 = self.y - enemy.y
             dist2 = math.hypot(dx2, dy2)
-            min_dist = self.radius + other.radius + 2
+            min_dist = self.radius + enemy.radius + 2
             if dist2 > 0 and dist2 < min_dist:
                 overlap = min_dist - dist2
                 push_x = dx2 / dist2 * overlap * 0.5
                 push_y = dy2 / dist2 * overlap * 0.5
                 self.x += push_x
                 self.y += push_y
-                other.x -= push_x
-                other.y -= push_y
+                enemy.x -= push_x
+                enemy.y -= push_y
 
         if self.attack_cooldown <= 0.0 and dist <= self.radius + player.radius + 4:
-            if player.invincible_timer <= 0.0:
+            if player.Iframe_timer <= 0.0:
                 player.current_health = max(0, player.current_health - self.attack_damage)
-                player.invincible_timer = 0.8
+                player.Iframe_timer = 0.8
             self.attack_cooldown = self.attack_delay
 
     def draw(self, screen):
@@ -326,7 +325,7 @@ class Enemy:
 
 
 def try_spawn_powerup(enemy):
-    chance = {"tanker": 5, "normal": 2.5, "runner": 0.1}.get(enemy.enemy_type, 0.0)
+    chance = {"tanker": 0.1, "normal": 0.05, "runner": 0.01}.get(enemy.enemy_type, 0.0)
     if random.random() < chance:
         power_type = random.choices(["ammo", "heal"], weights=[65, 35])[0]
         powerups.append(Powerup(enemy.x, enemy.y, power_type))
@@ -419,7 +418,7 @@ def fire_bullet():
     vx = dx / dist * Bullet.speed
     vy = dy / dist * Bullet.speed
     damage = int(20 * player.damage_multiplier)
-    bullet = Bullet(player.x, player.y, vx, vy, radius=8, color=(255,220,242))
+    bullet = Bullet(player.x, player.y, vx, vy)
     bullet.damage = damage
     bullets.append(bullet)
 
@@ -445,7 +444,7 @@ def spawn_wave_enemy(enemy_type=None):
         x = random.randint(screen_width * 2 // 3, screen_width - 40)
         y = random.randint(40, screen_height - 40)
     if enemy_type is None:
-        enemy_type = random.choices(["normal", "tanker", "runner"], weights=[40, 20, 40])[0]
+        enemy_type = random.choices(["normal", "tanker", "runner"], weights=[40, 30, 30])[0]
     enemies.append(Enemy(x, y, enemy_type))
 
 
@@ -457,10 +456,10 @@ def spawn_enemies(count):
 def start_wave(number):
     global wave_number, wave_target, enemies_to_spawn, wave_spawn_timer, wave_message, wave_message_time
     wave_number = number
-    wave_target = 5 + wave_number * 2
+    wave_target = 5 + wave_number // 1.25
     enemies_to_spawn = wave_target
     wave_spawn_timer = 0.15
-    wave_message = f"Wave {wave_number} begins!"
+    wave_message = f"Wave {wave_number} begins"
     wave_message_time = 3.0
 
 
@@ -476,10 +475,9 @@ def draw_health_bar():
     health_label = ui_font.render(f"Health: {player.current_health}/{player.max_health}", True, (255, 255, 255))
     screen.blit(health_label, (bar_x + 10, bar_y + bar_height // 2 - health_label.get_height() // 2))
 
-
 def draw_ability_slots():
     slot_x = 10
-    slot_y = 110
+    slot_y = 80
     slot_width = 180
     slot_height = 60
     slot_gap = 10
@@ -491,9 +489,8 @@ def draw_ability_slots():
         pygame.draw.rect(screen, (120, 180, 240), slot_rect, width=2, border_radius=10)
         if index == 0:
             name = "Bloodthirst"
-            status = "Ready" if available_charges > 0 else "Locked"
             status_color = (120, 255, 120) if available_charges > 0 else (255, 120, 120)
-            label = ui_font.render(name, True, (245, 245, 245))
+            label = ui_font.render(name, True, (255, 255, 255))
             screen.blit(label, (x + 10, slot_y + 8))
             count_label = small_font.render(f"Charges: {available_charges}", True, status_color)
             screen.blit(count_label, (x + 10, slot_y + 34))
@@ -502,7 +499,7 @@ def draw_ability_slots():
                 screen.blit(active_label, (x + 10, slot_y + 8 + label.get_height()))
         else:
             if player.ability_slots[index]:
-                label = ui_font.render(player.ability_slots[index], True, (245, 245, 245))
+                label = ui_font.render(player.ability_slots[index], True, (255, 255, 255))
                 screen.blit(label, (x + 10, slot_y + 14))
             else:
                 label = small_font.render("Empty Slot", True, (180, 180, 180))
@@ -556,7 +553,7 @@ def reset():
     player.bloodthirst_timer = 0.0
     player.bloodthirst_active = False
     player.bloodthirst_uses = 0
-    player.invincible_timer = 0.0
+    player.Iframe_timer = 0.0
     player_state = "idle"
     Game_state = "playing"
     start_wave(1)
@@ -608,8 +605,8 @@ def update(dt):
             if player.ammo > player.max_ammo:
                 player.ammo = player.max_ammo
 
-    if player.invincible_timer > 0.0:
-        player.invincible_timer = max(0.0, player.invincible_timer - dt)
+    if player.Iframe_timer > 0.0:
+        player.Iframe_timer = max(0.0, player.Iframe_timer - dt)
 
     if keys_pressed[pygame.K_x]:
         available_charges = kill_count // 20 - player.bloodthirst_uses
@@ -670,9 +667,9 @@ def update(dt):
             boulders.remove(boulder)
             continue
         if math.hypot(boulder.x - player.x, boulder.y - player.y) <= boulder.radius + player.radius:
-            if player.invincible_timer <= 0.0:
+            if player.Iframe_timer <= 0.0:
                 player.current_health = max(0, player.current_health - boulder.damage)
-                player.invincible_timer = 0.8
+                player.Iframe_timer = 0.8
             boulders.remove(boulder)
             continue
         if not (0 <= boulder.x <= screen_width and 0 <= boulder.y <= screen_height):
@@ -693,9 +690,9 @@ def update(dt):
             dx = player.x - shockwave.x
             dy = player.y - shockwave.y
             if math.hypot(dx, dy) <= shockwave.max_radius * (shockwave.age / shockwave.duration):
-                if player.invincible_timer <= 0.0:
+                if player.Iframe_timer <= 0.0:
                     player.current_health = max(0, player.current_health - shockwave.damage)
-                    player.invincible_timer = 0.8
+                    player.Iframe_timer = 0.8
                 shockwave.hit_applied = True
         if shockwave.is_expired():
             shockwaves.remove(shockwave)
