@@ -44,6 +44,9 @@ def run_game():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_k:
+                    player.is_alive = False
 
         update(dt)
 
@@ -453,13 +456,12 @@ def spawn_enemies(count):
         spawn_wave_enemy()
 
 
-def start_wave(number):
-    global wave_number, wave_target, enemies_to_spawn, wave_spawn_timer, wave_message, wave_message_time
-    wave_number = number
+def start_wave(global wave_number):
+    global wave_target, enemies_to_spawn, wave_spawn_timer, wave_message, wave_message_time
     wave_target = 5 + wave_number // 1.25
     enemies_to_spawn = wave_target
     wave_spawn_timer = 0.15
-    wave_message = f"Wave {wave_number} begins"
+    wave_message = f"Wave {wave_number}"
     wave_message_time = 3.0
 
 
@@ -472,8 +474,6 @@ def draw_health_bar():
     pygame.draw.rect(screen, (20, 20, 35), (bar_x, bar_y, bar_width, bar_height), border_radius=8)
     pygame.draw.rect(screen, (220, 20, 20), (bar_x + 2, bar_y + 2, bar_width - 4, bar_height - 4), border_radius=6)
     pygame.draw.rect(screen, (80, 220, 120), (bar_x + 2, bar_y + 2, max(fill_width, 0), bar_height - 4), border_radius=6)
-    health_label = ui_font.render(f"Health: {player.current_health}/{player.max_health}", True, (255, 255, 255))
-    screen.blit(health_label, (bar_x + 10, bar_y + bar_height // 2 - health_label.get_height() // 2))
 
 def draw_ability_slots():
     slot_x = 10
@@ -517,10 +517,10 @@ def draw_title_screen():
 
 def draw_game_over_screen():
     title = title_font.render("Game Over", True, (200, 30, 30))
-    subtitle = ui_font.render("Press R to retry", True, (255, 255, 255))
-    screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 2 - 120))
-    screen.blit(subtitle, (screen_width // 2 - subtitle.get_width() // 2, screen_height // 2 - 20))
-    stats = ui_font.render(f"Waves cleared: {wave_number}   Kills: {kill_count}", True, (255, 255, 255))
+    subtitle = ui_font.render("Press R to retry mission", True, (255, 255, 255))
+    screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 2 - 150))
+    screen.blit(subtitle, (screen_width // 2 - subtitle.get_width() // 2, screen_height // 2 - 10))
+    stats = ui_font.render(f"Waves cleared: {wave_number}", True, (255, 255, 255))
     screen.blit(stats, (screen_width // 2 - stats.get_width() // 2, screen_height // 2 + 40))
 
 
@@ -545,7 +545,7 @@ def reset():
     player.current_health = player.max_health
     player.ammo = 15
     player.is_alive = True
-    player.weapon = "gun"
+    player.weapon = "sword"
     player.attack_cooldown = 0.0
     player.weapon_swap_cooldown = 0.0
     player.sword_cooldown = Sword.slash_cooldown
