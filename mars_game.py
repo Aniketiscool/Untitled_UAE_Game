@@ -130,6 +130,7 @@ class Player:
                 self.weapon = "sword"
             self.weapon_swap_cooldown = 0.67
 
+
 class Bullet:
     speed = 550.0
 
@@ -149,6 +150,7 @@ class Bullet:
     def draw(self, screen):
         rect = pygame.Rect(int(self.x) - 3, int(self.y) - 3, 8, 8)
         pygame.draw.rect(screen, self.color, rect)
+
 
 class Boulder:
     speed = 280.0
@@ -171,6 +173,7 @@ class Boulder:
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+
 
 class Shockwave:
     def __init__(self, x, y):
@@ -196,6 +199,7 @@ class Shockwave:
     def is_expired(self):
         return self.age >= self.duration
 
+
 class Powerup:
     def __init__(self, x, y, power_type):
         self.x = x
@@ -218,6 +222,7 @@ class Powerup:
 
     def collides_with(self, player):
         return math.hypot(player.x - self.x, player.y - self.y) <= self.radius + player.radius
+
 
 class Enemy:
     def __init__(self, x, y, enemy_type="normal"):
@@ -327,20 +332,6 @@ class Enemy:
         return self.current_health <= 0
 
 
-def try_spawn_powerup(enemy):
-    chance = {"tanker": 0.1, "normal": 0.05, "runner": 0.01}.get(enemy.enemy_type, 0.0)
-    if random.random() < chance:
-        power_type = random.choices(["ammo", "heal"], weights=[65, 35])[0]
-        powerups.append(Powerup(enemy.x, enemy.y, power_type))
-
-
-def handle_enemy_kill():
-    global kill_count
-    kill_count += 1
-    if player.bloodthirst_active:
-        player.bloodthirst_timer += 0.5
-
-
 class Sword:
     remaining_hitbox_duration = 0.20
     range_distance = 100
@@ -408,6 +399,22 @@ class Sword:
     def is_active(self):
         return self.remaining_hitbox_duration > 0
 
+
+#================================================METHODS==================================================#
+
+def try_spawn_powerup(enemy):
+    chance = {"tanker": 0.1, "normal": 0.05, "runner": 0.01}.get(enemy.enemy_type, 0.0)
+    if random.random() < chance:
+        power_type = random.choices(["ammo", "heal"], weights=[65, 35])[0]
+        powerups.append(Powerup(enemy.x, enemy.y, power_type))
+
+def handle_enemy_kill():
+    global kill_count
+    kill_count += 1
+    if player.bloodthirst_active:
+        player.bloodthirst_timer += 1
+        player.current_health = min(player.max_health, player.current_health + 5)
+
 def fire_bullet():
     if player.ammo <= 0:
         return
@@ -431,7 +438,6 @@ def swing_sword():
     dy = mouse_y - player.y
     sword_swings.append(Sword(player, dx, dy))
 
-
 def spawn_wave_enemy(enemy_type=None):
     edge = random.choice(["top", "bottom", "left", "right"])
     if edge == "top":
@@ -450,11 +456,9 @@ def spawn_wave_enemy(enemy_type=None):
         enemy_type = random.choices(["normal", "tanker", "runner"], weights=[40, 30, 30])[0]
     enemies.append(Enemy(x, y, enemy_type))
 
-
 def spawn_enemies(count):
     for _ in range(count):
         spawn_wave_enemy()
-
 
 def start_wave(number):
     global wave_number, wave_target, enemies_to_spawn, wave_spawn_timer, wave_message, wave_message_time
@@ -466,63 +470,63 @@ def start_wave(number):
     wave_message_time = 3.0
 
 
-def draw_health_bar():
-    bar_x = 10
-    bar_y = 10
-    bar_width = 320
-    bar_height = 28
-    fill_width = int((player.current_health / player.max_health) * (bar_width - 4))
-    pygame.draw.rect(screen, (20, 20, 35), (bar_x, bar_y, bar_width, bar_height), border_radius=8)
-    pygame.draw.rect(screen, (220, 20, 20), (bar_x + 2, bar_y + 2, bar_width - 4, bar_height - 4), border_radius=6)
-    pygame.draw.rect(screen, (80, 220, 120), (bar_x + 2, bar_y + 2, max(fill_width, 0), bar_height - 4), border_radius=6)
+class draw_methods():
+    def health_bar():
+        bar_x = 10
+        bar_y = 10
+        bar_width = 320
+        bar_height = 28
+        fill_width = int((player.current_health / player.max_health) * (bar_width - 4))
+        pygame.draw.rect(screen, (20, 20, 35), (bar_x, bar_y, bar_width, bar_height), border_radius=8)
+        pygame.draw.rect(screen, (220, 20, 20), (bar_x + 2, bar_y + 2, bar_width - 4, bar_height - 4), border_radius=6)
+        pygame.draw.rect(screen, (80, 220, 120), (bar_x + 2, bar_y + 2, max(fill_width, 0), bar_height - 4), border_radius=6)
 
-def draw_ability_slots():
-    slot_x = 10
-    slot_y = 80
-    slot_width = 180
-    slot_height = 60
-    slot_gap = 10
-    available_charges = kill_count // 20 - player.bloodthirst_uses
-    for index in range(3):
-        x = slot_x + index * (slot_width + slot_gap)
-        slot_rect = pygame.Rect(x, slot_y, slot_width, slot_height)
-        pygame.draw.rect(screen, (30, 30, 45), slot_rect, border_radius=10)
-        pygame.draw.rect(screen, (120, 180, 240), slot_rect, width=2, border_radius=10)
-        if index == 0:
-            name = "Bloodthirst"
-            status_color = (120, 255, 120) if available_charges > 0 else (255, 120, 120)
-            label = ui_font.render(name, True, (255, 255, 255))
-            screen.blit(label, (x + 10, slot_y + 8))
-            count_label = small_font.render(f"Charges: {available_charges}", True, status_color)
-            screen.blit(count_label, (x + 10, slot_y + 34))
-            if player.bloodthirst_active:
-                active_label = small_font.render(f"Active {player.bloodthirst_timer:.1f}s", True, (255, 255, 120))
-                screen.blit(active_label, (x + 10, slot_y + 8 + label.get_height()))
-        else:
-            if player.ability_slots[index]:
-                label = ui_font.render(player.ability_slots[index], True, (255, 255, 255))
-                screen.blit(label, (x + 10, slot_y + 14))
+    def ability_slots():
+        slot_x = 10
+        slot_y = 80
+        slot_width = 180
+        slot_height = 60
+        slot_gap = 10
+        available_charges = kill_count // 20 - player.bloodthirst_uses
+        for index in range(3):
+            x = slot_x + index * (slot_width + slot_gap)
+            slot_rect = pygame.Rect(x, slot_y, slot_width, slot_height)
+            pygame.draw.rect(screen, (30, 30, 45), slot_rect, border_radius=10)
+            pygame.draw.rect(screen, (120, 180, 240), slot_rect, width=2, border_radius=10)
+            if index == 0:
+                name = "Bloodthirst"
+                status_color = (120, 255, 120) if available_charges > 0 else (255, 120, 120)
+                label = ui_font.render(name, True, (255, 255, 255))
+                screen.blit(label, (x + 10, slot_y + 8))
+                count_label = small_font.render(f"Charges: {available_charges}", True, status_color)
+                screen.blit(count_label, (x + 10, slot_y + 34))
+                if player.bloodthirst_active:
+                    active_label = small_font.render(f"Active {player.bloodthirst_timer:.1f}s", True, (255, 255, 120))
+                    screen.blit(active_label, (x + 10, slot_y + 8 + label.get_height()))
             else:
-                label = small_font.render("Empty Slot", True, (180, 180, 180))
-                screen.blit(label, (x + 10, slot_y + 20))
+                if player.ability_slots[index]:
+                    label = ui_font.render(player.ability_slots[index], True, (255, 255, 255))
+                    screen.blit(label, (x + 10, slot_y + 14))
+                else:
+                    label = small_font.render("Empty Slot", True, (180, 180, 180))
+                    screen.blit(label, (x + 10, slot_y + 20))
 
+    def title_screen():
+        title = title_font.render("", True, (32, 32, 32))
+        subtitle = ui_font.render("Click to begin", True, (32, 32, 32))
+        screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 2 - 120))
+        screen.blit(subtitle, (screen_width // 2 - subtitle.get_width() // 2, screen_height // 2 - 20))
+        controls = small_font.render("Move: WASD / Arrow keys  •  Shoot: Left Click / Space  •  Swap weapon: G", True, (32, 32, 32))
+        screen.blit(controls, (screen_width // 2 - controls.get_width() // 2, screen_height // 2 + 40))
 
-def draw_title_screen():
-    title = title_font.render("", True, (32, 32, 32))
-    subtitle = ui_font.render("Click to begin", True, (32, 32, 32))
-    screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 2 - 120))
-    screen.blit(subtitle, (screen_width // 2 - subtitle.get_width() // 2, screen_height // 2 - 20))
-    controls = small_font.render("Move: WASD / Arrow keys  •  Shoot: Left Click / Space  •  Swap weapon: G", True, (32, 32, 32))
-    screen.blit(controls, (screen_width // 2 - controls.get_width() // 2, screen_height // 2 + 40))
+    def game_over_screen():
+        title = title_font.render("Game Over", True, (200, 30, 30))
+        subtitle = ui_font.render("Press R to retry mission", True, (255, 255, 255))
+        screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 2 - 150))
+        screen.blit(subtitle, (screen_width // 2 - subtitle.get_width() // 2, screen_height // 2 - 10))
+        stats = ui_font.render(f"Waves cleared: {wave_number}", True, (255, 255, 255))
+        screen.blit(stats, (screen_width // 2 - stats.get_width() // 2, screen_height // 2 + 40))
 
-
-def draw_game_over_screen():
-    title = title_font.render("Game Over", True, (200, 30, 30))
-    subtitle = ui_font.render("Press R to retry mission", True, (255, 255, 255))
-    screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 2 - 150))
-    screen.blit(subtitle, (screen_width // 2 - subtitle.get_width() // 2, screen_height // 2 - 10))
-    stats = ui_font.render(f"Waves cleared: {wave_number}", True, (255, 255, 255))
-    screen.blit(stats, (screen_width // 2 - stats.get_width() // 2, screen_height // 2 + 40))
 
 
 def reset():
@@ -559,7 +563,6 @@ def reset():
     Game_state = "playing"
     start_wave(1)
 
-
 def update(dt):
     """handles all updates to the game
 
@@ -571,13 +574,13 @@ def update(dt):
     keys_pressed = pygame.key.get_pressed()
 
     if Game_state == "title_screen":
-        draw_title_screen()
+        draw_methods.title_screen()
         if keys_pressed[pygame.K_RETURN] or keys_pressed[pygame.K_SPACE] or pygame.mouse.get_pressed()[0]:
             reset()
         return
 
     if Game_state == "game_over":
-        draw_game_over_screen()
+        draw_methods.game_over_screen()
         if keys_pressed[pygame.K_r]:
             reset()
         return
@@ -625,7 +628,7 @@ def update(dt):
         Game_state = "game_over"
 
     if not player.is_alive:
-        draw_game_over_screen()
+        draw_methods.game_over_screen()
         return
 
     if len(enemies) == 0 and enemies_to_spawn == 0:
@@ -710,8 +713,8 @@ def update(dt):
         enemy.draw(screen)
 
     player.draw(screen)
-    draw_health_bar()
-    draw_ability_slots()
+    draw_methods.health_bar()
+    draw_methods.ability_slots()
     kills_text = ui_font.render(f"Kills: {kill_count}", True, (255, 255, 255))
     screen.blit(kills_text, (10, 190))
     wave_text = ui_font.render(f"Wave: {wave_number}/{max_waves}", True, (255, 255, 255))
