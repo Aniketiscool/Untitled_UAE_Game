@@ -456,8 +456,9 @@ def spawn_enemies(count):
         spawn_wave_enemy()
 
 
-def start_wave(global wave_number):
-    global wave_target, enemies_to_spawn, wave_spawn_timer, wave_message, wave_message_time
+def start_wave(number):
+    global wave_number, wave_target, enemies_to_spawn, wave_spawn_timer, wave_message, wave_message_time
+    wave_number = number
     wave_target = 5 + wave_number // 1.25
     enemies_to_spawn = wave_target
     wave_spawn_timer = 0.15
